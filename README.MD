@@ -68,5 +68,34 @@ Start the service
 sc start DeleteScansService
 ```  
 
+This fails  
+```  
+sc config WinDefend depend= "DeleteScansService"  
+```  
+Check if service is running as NT Authority/System (cmd.exe)  
+```  
+sc qc DeleteScansService
+```  
+
+Check if service is running as NT Authority/System (PowerShell)  
+```powershell    
+Get-WmiObject Win32_Service | Where-Object { $_.Name -eq 'DeleteScansService' } | Select-Object Name, StartName
+```  
+
+Run as scheduled task...  
+```powershell    
+$action = New-ScheduledTaskAction -Execute "C:\Users\admin\source\repos\DeleteScans\bin\Debug\DeleteScans.exe"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -TaskName "DeleteDefenderScansStartup" -Description "Runs my program at startup"
+```  
+
+Delete scheduled task  
+```powershell    
+schtasks /delete /tn "DeleteDefenderScansStartup" /f
+```  
+
 
 
