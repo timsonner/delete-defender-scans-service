@@ -4,8 +4,9 @@ C# implementation of a Windows service that deletes the Windows Defender scans f
 
 The reason for this is the Scans folder is locked down and I wanted to try deleting it with NT Authority System privileges. 
 
-The service installs correctly, the event log errors indicate some files in the directory are in use and can't be removed.
-Next step is likely stop those processes or make this service run before those processes start...
+The service installs and starts correctly, the event log errors indicate some files in the directory are in use and can't be removed.
+
+Scheduling the service as a sheduled task at reboot clears the logs.
 
 ## Project Creation  
 
@@ -68,7 +69,7 @@ Start the service
 sc start DeleteScansService
 ```  
 
-This fails  
+Attempt to make Defender depend on our service. (This fails due to permissions)    
 ```  
 sc config WinDefend depend= "DeleteScansService"  
 ```  
@@ -84,12 +85,12 @@ Get-WmiObject Win32_Service | Where-Object { $_.Name -eq 'DeleteScansService' } 
 
 Run as scheduled task...  
 ```powershell    
-$action = New-ScheduledTaskAction -Execute "C:\Users\admin\source\repos\DeleteScans\bin\Debug\DeleteScans.exe"
+$action = New-ScheduledTaskAction -Execute "C:\Users\<username>\source\repos\DeleteScans\bin\Debug\DeleteScans.exe"
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
-Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -TaskName "DeleteDefenderScansStartup" -Description "Runs my program at startup"
+Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -TaskName "DeleteDefenderScansStartup" -Description "Removes Defender Scans at Startup"
 ```  
 
 Delete scheduled task  
